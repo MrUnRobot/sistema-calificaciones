@@ -40,36 +40,36 @@ def calcular_promedio(calificaciones_trimestre):
     return round(suma / len(materias), 2)
 
 def verificar_password(password, hash_password, es_admin=False):
+    print(f"🔍 VERIFICANDO PASSWORD")
+    print(f"   Input: '{password}'")
+    print(f"   Stored: '{hash_password}'")
+    print(f"   Es admin: {es_admin}")
+    
     try:
-        print(f"🔍 Verificando password: input='{password}', stored='{hash_password[:20]}...', es_admin={es_admin}")
+        # Si es texto plano, comparar directamente
+        if password == hash_password:
+            print("   ✅ Password válido (texto plano)")
+            return True
         
-        if es_admin:
-            # Solo admin usa bcrypt
-            if isinstance(hash_password, str):
-                hash_password = hash_password.encode('utf-8')
-            return bcrypt.checkpw(password.encode('utf-8'), hash_password)
-        else:
-            # Maestros: acepta texto plano Y bcrypt
-            # 1. Primero prueba como texto plano
-            if password == hash_password:
-                print("✅ Password correcto (texto plano)")
-                return True
-            
-            # 2. Si no, prueba como bcrypt
+        # Si parece bcrypt (admin o maestros con hash)
+        if isinstance(hash_password, str) and hash_password.startswith('$2b$'):
             try:
-                if isinstance(hash_password, str):
-                    hash_password = hash_password.encode('utf-8')
-                if bcrypt.checkpw(password.encode('utf-8'), hash_password):
-                    print("✅ Password correcto (bcrypt)")
+                if bcrypt.checkpw(password.encode('utf-8'), hash_password.encode('utf-8')):
+                    print("   ✅ Password válido (bcrypt)")
                     return True
-            except:
-                pass
+            except Exception as e:
+                print(f"   ❌ Error bcrypt: {e}")
+        
+        # Último intento: comparación de strings
+        if str(password) == str(hash_password):
+            print("   ✅ Password válido (string cast)")
+            return True
             
-            # 3. Último intento: comparar strings
-            return str(password) == str(hash_password)
-            
+        print("   ❌ Password inválido")
+        return False
+        
     except Exception as e:
-        print(f"❌ Error en verificar_password: {e}")
+        print(f"   ❌ Error en verificación: {e}")
         return False
 
 def agregar_mensaje(mensaje, tipo='success'):
@@ -1206,4 +1206,5 @@ if __name__ == '__main__':
     print("👨‍🏫 Maestro 1°A: m1a | Contraseña: 1234")
 
     app.run(debug=True, host='0.0.0.0', port=port)
+
 
