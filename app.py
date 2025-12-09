@@ -133,30 +133,43 @@ def iniciar_sesion():
     usuario = request.form['usuario']
     password = request.form['password']
     
+    print(f"\n" + "="*60)
+    print(f"🔐 LOGIN ATTEMPT: {usuario}")
+    print(f"Password recibido: '{password}'")
+    
     db = conectar_bd()
     if db is not None:
         maestro = db.maestros.find_one({'usuario': usuario, 'activo': True})
+        
         if maestro:
+            print(f"✅ Usuario encontrado: {maestro['nombre']}")
+            print(f"   Password en DB: '{maestro['password']}'")
+            print(f"   Longitud: {len(maestro['password'])}")
+            print(f"   Rol: {maestro.get('rol', 'maestro')}")
+            
             es_admin = maestro.get('rol') == 'admin'
+            
+            # VERIFICACIÓN DETALLADA
+            print(f"\n   --- Verificación detallada ---")
+            
+            # 1. Comparación directa
+            print(f"   1. Comparación directa: '{password}' == '{maestro['password']}' ?")
+            print(f"      Resultado: {password == maestro['password']}")
+            
+            # 2. Tipo de datos
+            print(f"   2. Tipos: password={type(password)}, db_pass={type(maestro['password'])}")
+            
+            # Llamar a verificar_password
             if verificar_password(password, maestro['password'], es_admin):
-                session['usuario'] = usuario
-                session['logueado'] = True
-                session['maestro_id'] = maestro['_id']
-                session['maestro_nombre'] = maestro['nombre']
-                session['grupo'] = maestro['grupo']
-                session['grado'] = maestro['grado']
-                session['rol'] = maestro.get('rol', 'maestro')
-                
-                if es_admin:
-                    agregar_mensaje(f"✅ Sesión de administrador iniciada correctamente", 'success')
-                    return redirect('/admin')
-                else:
-                    agregar_mensaje(f"✅ Sesión iniciada correctamente - {maestro['nombre']} ({maestro['grupo']})", 'success')
-                    return redirect('/seleccionar_trimestre')
+                print(f"🎉 ¡LOGIN EXITOSO!")
+                # ... resto del código
+            else:
+                print(f"❌ FALLÓ la verificación")
         else:
-            print(f"❌ Usuario no encontrado: {usuario}")
+            print(f"❌ Usuario NO encontrado")
+    else:
+        print(f"❌ No hay conexión a BD")
     
-    agregar_mensaje("❌ Usuario o contraseña incorrectos", 'danger')
     return redirect('/')
 
 # Selección de trimestre para maestros
@@ -1206,5 +1219,6 @@ if __name__ == '__main__':
     print("👨‍🏫 Maestro 1°A: m1a | Contraseña: 1234")
 
     app.run(debug=True, host='0.0.0.0', port=port)
+
 
 
