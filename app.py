@@ -1138,6 +1138,56 @@ def admin_panel():
     
     return html
 
+@app.route('/test_login/<usuario>/<password>')
+def test_login(usuario, password):
+    """Test directo de login sin interfaz"""
+    from database import conectar_mongodb
+    import bcrypt
+    
+    db = conectar_mongodb()
+    if not db:
+        return "❌ No hay conexión a MongoDB"
+    
+    user = db.maestros.find_one({'usuario': usuario})
+    if not user:
+        return f"❌ Usuario '{usuario}' no encontrado"
+    
+    stored_password = user['password']
+    es_admin = user.get('rol') == 'admin'
+    
+    html = f"""
+    <h2>🔍 Test de Login: {usuario}</h2>
+    <p><strong>Password en DB:</strong> <code>{stored_password}</code></p>
+    <p><strong>Password ingresado:</strong> <code>{password}</code></p>
+    <p><strong>Longitud DB:</strong> {len(stored_password)}</p>
+    <p><strong>Es admin?:</strong> {es_admin}</p>
+    <p><strong>Es bcrypt?:</strong> {stored_password.startswith('$2b$')}</p>
+    <hr>
+    """
+    
+    # Test 1: Comparación directa de strings
+    if password == stored_password:
+        html += "<p style='color: green;'>✅ Test 1: Strings iguales (debería funcionar)</p>"
+    else:
+        html += f"<p style='color: red;'>❌ Test 1: Strings diferentes: '{password}' vs '{stored_password}'</p>"
+    
+    # Test 2: Verificación bcrypt (solo si parece bcrypt)
+    if stored_password.startswith('$2b$'):
+        try:
+            if bcrypt.checkpw(password.encode('utf-8'), stored_password.encode('utf-8')):
+                html += "<p style='color: green;'>✅ Test 2: Bcrypt válido</p>"
+            else:
+                html += "<p style='color: red;'>❌ Test 2: Bcrypt inválido</p>"
+        except Exception as e:
+            html += f"<p style='color: red;'>❌ Test 2: Error bcrypt: {e}</p>"
+    
+    html += f"""
+    <hr>
+    <p><a href="/login_fix">Login Fix</a> | <a href="/">Login normal</a></p>
+    """
+    
+    return html
+
 @app.route('/cerrar_sesion')
 def cerrar_sesion():
     session.clear()
@@ -1156,3 +1206,4 @@ if __name__ == '__main__':
     print("👨‍🏫 Maestro 1°A: m1a | Contraseña: 1234")
 
     app.run(debug=True, host='0.0.0.0', port=port)
+
