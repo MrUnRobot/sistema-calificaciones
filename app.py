@@ -41,14 +41,35 @@ def calcular_promedio(calificaciones_trimestre):
 
 def verificar_password(password, hash_password, es_admin=False):
     try:
+        print(f"🔍 Verificando password: input='{password}', stored='{hash_password[:20]}...', es_admin={es_admin}")
+        
         if es_admin:
+            # Solo admin usa bcrypt
             if isinstance(hash_password, str):
                 hash_password = hash_password.encode('utf-8')
             return bcrypt.checkpw(password.encode('utf-8'), hash_password)
         else:
-            return password == hash_password
+            # Maestros: acepta texto plano Y bcrypt
+            # 1. Primero prueba como texto plano
+            if password == hash_password:
+                print("✅ Password correcto (texto plano)")
+                return True
+            
+            # 2. Si no, prueba como bcrypt
+            try:
+                if isinstance(hash_password, str):
+                    hash_password = hash_password.encode('utf-8')
+                if bcrypt.checkpw(password.encode('utf-8'), hash_password):
+                    print("✅ Password correcto (bcrypt)")
+                    return True
+            except:
+                pass
+            
+            # 3. Último intento: comparar strings
+            return str(password) == str(hash_password)
+            
     except Exception as e:
-        print(f"❌ Error verificando password: {e}")
+        print(f"❌ Error en verificar_password: {e}")
         return False
 
 def agregar_mensaje(mensaje, tipo='success'):
@@ -1133,4 +1154,5 @@ if __name__ == '__main__':
     print(f"✅ Servidor del Sistema de Calificaciones iniciado en puerto {port}")
     print("👤 Admin: admin | Contraseña: AdminSeguro2025!")
     print("👨‍🏫 Maestro 1°A: m1a | Contraseña: 1234")
+
     app.run(debug=True, host='0.0.0.0', port=port)
